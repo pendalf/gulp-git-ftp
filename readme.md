@@ -17,9 +17,9 @@ var gulp = require('gulp');
 var gitftp = require('gulp-git-ftp');
 
 gulp.task('default', function () {
-	return gulp.src('./**', /* avoid node_modules files = faster */ '!./**/node_modules/**')
-		.pipe(gitftp())
-		.pipe(gulp.dest('dist'));
+  return gulp.src('./**', /* avoid node_modules files = faster */ '!./**/node_modules/**')
+    .pipe(gitftp())
+    .pipe(gulp.dest('dist'));
 });
 ```
 
