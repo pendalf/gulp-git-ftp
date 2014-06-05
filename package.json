@@ -1,0 +1,27 @@
+{
+  "name": "gulp-git-ftp",
+  "version": "0.0.1",
+  "description": "",
+  "license": "MIT",
+  "repository": "joseadrian/gulp-git-ftp",
+  "author": {
+    "name": "Joseadrian",
+    "url": "https://github.com/joseadrian"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+  ],
+  "dependencies": {
+    "gulp-util": "~2.2.14",
+    "through2": "~0.4.1",
+    "ignore": "~2.2.12"
+  },
+  "devDependencies": {
+    "mocha": "*"
+  }
+}
