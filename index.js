@@ -2,9 +2,11 @@
 var gutil = require('gulp-util'),
   through = require('through2'),
    ignore = require('ignore'),
-      git = require('gift');
+      git = require('gift'),
+      ftp = require('ftp');
 
 var repo = git('.git');
+var ftp_client = new ftp();
 
 module.exports = function (options) {
 
@@ -32,11 +34,15 @@ module.exports = function (options) {
       }
 
       if( ignoreFiles.filter([file.relative]).length > 0 && gitdiffFiles.indexOf(filename) >= 0) {
-       stream.push(file);
-       console.log(filename );
+        stream.push(file);
+        ftp_client.put(file.contents, file.relative, function(err) {
+          gutil.log('File uploaded: ' + file.relative);
+          cb();
+        });
+        stream.push(file);
+      } else {
+        cb();
       }
-
-      return cb();
     }
 
     if( !! gitdiffFiles) {
@@ -48,7 +54,7 @@ module.exports = function (options) {
         return checkfiles();
       }
 
-      repo.git("diff --name-status HEAD^.." + hashLocal + " -- " + filename, function( err, status ) {
+      repo.git("diff --name-status HEAD~1.." + hashLocal + " -- " + filename, function( err, status ) {
         if( err ) {
           return checkfiles();
         }
@@ -60,9 +66,18 @@ module.exports = function (options) {
           return filename.slice(1).trim();
         });
 
-        checkfiles();
+        ftp_client.on('ready', checkfiles);
+        ftp_client.connect({
+          host: '127.0.0.1',
+          port: '5000',
+          user: 'admin',
+          password: 'admin'
+        });
       });
     });
 
+  }, function(cb) {
+    ftp_client.end();
+    return cb();
   });
 };
