@@ -2,82 +2,91 @@
 var gutil = require('gulp-util'),
   through = require('through2'),
    ignore = require('ignore'),
-      git = require('gift'),
-      ftp = require('ftp');
+    async = require('async'),
+      git = require('./lib/git'),
+      ftp = require('./lib/ftp');
 
-var repo = git('.git');
-var ftp_client = new ftp();
+var pluginName = 'gulp-git-ftp';
 
-module.exports = function (options) {
+module.exports = function (options, files) {
 
-  if(options.ignore === undefined) {
-    options.ignore = [];
-  }
+  var ignoreFiles = ignore().addIgnoreFile(['.ftpignore']), gitFiles = null;
 
-  var ignoreFiles = ignore().addIgnoreFile(['.ftpignore'].concat(options.ignore));
-  var gitdiffFiles = null;
-
-  return through.obj(function (file, encoding, cb) {
+  return through.obj(function (file, encoding, keep) {
 
     var stream = this;
-    var filename = file.relative;
 
-    var checkfiles = function () {
+    var checkFiles = function () {
       if (file.isNull()) {
         stream.push(file);
-        return cb();
+        return keep();
       }
 
       if (file.isStream()) {
-        stream.emit('error', new gutil.PluginError('gulp-src-ignore', 'Streaming not supported'));
-        return cb();
+        stream.emit('error', new gutil.PluginError(pluginName, 'Streaming not supported'));
+        return keep();
       }
 
-      if( ignoreFiles.filter([file.relative]).length > 0 && gitdiffFiles.indexOf(filename) >= 0) {
+      if( ignoreFiles.filter([file.relative]).length > 0 &&
+          typeof gitFiles[file.relative] != "undefined" ) {
+
         stream.push(file);
-        ftp_client.put(file.contents, file.relative, function(err) {
-          gutil.log('File uploaded: ' + file.relative);
-          cb();
-        });
-        stream.push(file);
-      } else {
-        cb();
+        return keep();
       }
+
+      return keep();
     }
 
-    if( !! gitdiffFiles) {
-      return checkfiles();
+    if( !! gitFiles) {
+      return checkFiles();
     }
 
-    repo.git("log --pretty=format:'%H' -n 1", function( err, hashLocal ) {
-      if( err ) {
-        return checkfiles();
-      }
-
-      repo.git("diff --name-status HEAD~1.." + hashLocal + " -- " + filename, function( err, status ) {
+    ftp.on('ready', function() {
+      async.series({
+        local: function(cb) {
+          git.getLastCommit(cb);
+        },
+        server: function(cb) {
+          ftp.getHash(cb);
+        }
+      }, function(err, commits) {
         if( err ) {
-          return checkfiles();
+          throw new gutil.PluginError(pluginName, err);
         }
 
-        // Files from
-        gitdiffFiles = status.match(/([A-Z]{1})\W(.+)/gm).filter(function(filename) {
-          return filename.slice(0, 1) != 'D';
-        }).map(function(filename) {
-          return filename.slice(1).trim();
-        });
+        git.getFiles(commits.local, commits.server, function(err, files) {
+          if( err ) {
+            throw new gutil.PluginError(pluginName, err);
+          }
 
-        ftp_client.on('ready', checkfiles);
-        ftp_client.connect({
-          host: '127.0.0.1',
-          port: '5000',
-          user: 'admin',
-          password: 'admin'
+          if( ! Object.keys(files).length ) {
+            gutil.log(pluginName, gutil.colors.green('Everything up-to-date'));
+            return ftp.end();
+          }
+
+          ftp.upload(new Buffer(commits.local, 'utf-8'), '.gulpftp', function(err) {
+            if( err ) {
+
+            }
+
+            checkFiles();
+          });
+
+          gitFiles = files;
         });
       });
     });
 
-  }, function(cb) {
-    ftp_client.end();
-    return cb();
+    ftp.connect(options);
+
+  }, function(finish) {
+    ftp.place(gitFiles, function(err, file, next) {
+      var message = 'File ' + file.name + ': ' + file.action;
+      gutil.log(pluginName, gutil.colors[err ? 'red' : 'green'](message));
+      next();
+    }, function(err) {
+      ftp.end();
+      finish();
+    })
   });
 };
