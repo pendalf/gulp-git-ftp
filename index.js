@@ -1,16 +1,17 @@
 'use strict';
 var gutil = require('gulp-util'),
   through = require('through2'),
-   ignore = require('ignore'),
+   ignore = require('ignore')(),
     async = require('async'),
       git = require('./lib/git'),
       ftp = require('./lib/ftp');
 
-var pluginName = 'gulp-git-ftp';
+var pluginName = 'gulp-git-ftp:';
 
-module.exports = function (options, files) {
+module.exports = function (patterns) {
 
-  var ignoreFiles = ignore().addIgnoreFile(['.ftpignore']), gitFiles = null;
+  var ignoreFiles = ignore.addIgnoreFile(['.gitignore', '.ftpignore']),
+         gitFiles = null;
 
   return through.obj(function (file, encoding, keep) {
 
@@ -29,9 +30,7 @@ module.exports = function (options, files) {
 
       if( ignoreFiles.filter([file.relative]).length > 0 &&
           typeof gitFiles[file.relative] != "undefined" ) {
-
         stream.push(file);
-        return keep();
       }
 
       return keep();
@@ -75,9 +74,17 @@ module.exports = function (options, files) {
           gitFiles = files;
         });
       });
+    }).on('error', function(err) {
+      gutil.log(pluginName, gutil.colors.red(err.message));
     });
 
-    ftp.connect(options);
+    git.getConfig('gulp-gitftp', function(err, connProperties) {
+      if (err) {
+        throw new gutil.PluginError(pluginName, err);
+      }
+
+      ftp.connect(connProperties);
+    });
 
   }, function(finish) {
     ftp.place(gitFiles, function(err, file, next) {
