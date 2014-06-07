@@ -1,6 +1,6 @@
 # [gulp](http://gulpjs.com)-git-ftp
 
-> Gulp plugin to upload files based on diff between 2 commits. Based on [gulp-gitmodified](https://github.com/mikaelbr/gulp-gitmodified)
+> Gulp plugin to upload files based on the hash of the last commit found on the ftp-server inside a .gulpfile. If the file is not found or is empty, the files from ls-files are uploaded. Based on [gulp-gitmodified](https://github.com/mikaelbr/gulp-gitmodified)
 
 
 ## Install
@@ -16,27 +16,29 @@ $ npm install --save-dev gulp-git-ftp
 var gulp = require('gulp');
 var gitftp = require('gulp-git-ftp');
 
-gulp.task('default', function () {
-  return gulp.src('./**', /* avoid node_modules files = faster */ '!./**/node_modules/**')
-    .pipe(gitftp())
-    .pipe(gulp.dest('dist'));
+gulp.task('upload', function () {
+  /*                       avoid node_modules files = faster */ 
+  return gulp.src('./**', '!./**/node_modules/**')
+             .pipe(gitftp());
 });
 ```
 
 
 ## API
 
-### gitftp(options)
+### gitftp()
 
-#### options
+Instead of adding the options to connect to the FTP server inside de gulpfile.s, which in some cases would be commited, the options are gotten from the git config file. 
 
-##### host
+```
+git config gulp-gitftp.host localhost
+git config gulp-gitftp.port 21
+git config gulp-gitftp.user username
+git config gulp-gitftp.password pass
+```
 
-Type: `String`  
-Default: `localhost`
-
-Lorem ipsum.
-
+## .ftpignore file
+If you want to ignore files, create a file .ftpignore the same way you create .gitignore files.
 
 ## License
 
