@@ -10,7 +10,7 @@ The uploads are going to be uploaded to the root. It depends on the ftp user you
 ## Install
 
 ```bash
-$ npm install --save-dev gulp-git-ftp
+$ npm install --save-dev git://github.com/joseadrian/gulp-git-ftp.git#dev
 ```
 
 ## Usage
