@@ -2,6 +2,8 @@
 
 # [gulp](http://gulpjs.com)-git-ftp
 
+>This plugin is the fork of [this plugin http://github.com/joseadrian/gulp-git-ftp](http://github.com/joseadrian/gulp-git-ftp)<br>New feature:<br />- Added the ability to work with a remote directory on ftp
+
 > Gulp plugin to upload files based on the hash of the last commit found on the ftp-server inside a .gulpfile. If the file is not found or is empty, the files from ls-files are uploaded. Based on [gulp-gitmodified](https://github.com/mikaelbr/gulp-gitmodified)
 
 
@@ -12,7 +14,7 @@ The uploads are going to be uploaded to the root. It depends on the ftp user you
 ## Install
 
 ```bash
-$ npm install --save-dev git://github.com/joseadrian/gulp-git-ftp.git#dev
+$ npm install --save-dev git://github.com/pendalf/gulp-git-ftp.git#dev
 ```
 
 ## Usage
