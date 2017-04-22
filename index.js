@@ -10,6 +10,8 @@ var pluginName = 'gulp-git-ftp:';
 
 module.exports = function (patterns) {
 
+  var remoteDir = patterns.remoteDir || '';
+
   var ignoreFiles = ignore.addIgnoreFile(['.gitignore', '.ftpignore']),
          gitFiles = null;
 
@@ -30,6 +32,7 @@ module.exports = function (patterns) {
 
       if( ignoreFiles.filter([file.relative]).length > 0 &&
           typeof gitFiles[file.relative] != "undefined" ) {
+
         stream.push(file);
       }
 
@@ -46,7 +49,7 @@ module.exports = function (patterns) {
           git.getLastCommit(cb);
         },
         server: function(cb) {
-          ftp.getHash(cb);
+          ftp.getHash(remoteDir, cb);
         }
       }, function(err, commits) {
         if( err ) {
@@ -63,7 +66,7 @@ module.exports = function (patterns) {
             return ftp.end();
           }
 
-          ftp.upload(new Buffer(commits.local, 'utf-8'), '.gulpftp', function(err) {
+          ftp.upload(new Buffer(commits.local, 'utf-8'), remoteDir + '.gulpftp', function(err) {
             if( err ) {
 
             }
@@ -72,6 +75,14 @@ module.exports = function (patterns) {
           });
 
           gitFiles = files;
+
+          for (var key in gitFiles){
+            if( ignoreFiles.filter([key]).length < 1 &&
+                typeof gitFiles[key] != "undefined" ) {
+
+              delete gitFiles[key];
+            }
+          }
         });
       });
     }).on('error', function(err) {
@@ -91,7 +102,7 @@ module.exports = function (patterns) {
       var message = 'File ' + file.name + ': ' + file.action;
       gutil.log(pluginName, gutil.colors[err ? 'red' : 'green'](message));
       next();
-    }, function(err) {
+    }, remoteDir, function(err) {
       ftp.end();
       finish();
     })
