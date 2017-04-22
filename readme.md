@@ -23,8 +23,11 @@ var gitftp = require('gulp-git-ftp');
 
 gulp.task('upload', function () {
   /*                       avoid node_modules files = faster */ 
-  return gulp.src(['./**', '!./**/node_modules/**'])
-             .pipe(gitftp());
+  var opts = {
+  	'remoteDir': 'test-gulp-ftp/'
+  }
+  return gulp.src(['./**', '!./**/node_modules/**'], opts)
+             .pipe(gitftp(opts));
 });
 ```
 
